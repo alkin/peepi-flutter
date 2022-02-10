@@ -4,9 +4,12 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 // import 'package:webview_flutter/webview_flutter.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 // import 'package:flutter_webview_plugin/flutter_webview_plugin.dart';
+
+import 'package:url_launcher/url_launcher.dart';
 
 Future main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -107,12 +110,23 @@ class _MyHomePageState extends State<MyHomePage> {
         },
         onCreateWindow: openPopup,
       ),
+      InAppWebView(
+        key: webViewKeyC,
+        initialUrlRequest: URLRequest(
+            url: Uri.parse("https://peepi-test-flutter.vercel.app/whatsapp")),
+        initialOptions: options,
+        onWebViewCreated: (controller) {
+          webViewController = controller;
+        },
+        onCreateWindow: openPopup,
+      ),
     ];
 
     final navbarItems = <BottomNavigationBarItem>[
       const BottomNavigationBarItem(icon: Icon(Icons.cloud), label: 'Popup'),
       const BottomNavigationBarItem(icon: Icon(Icons.cloud), label: 'File'),
       const BottomNavigationBarItem(icon: Icon(Icons.alarm), label: 'Video'),
+      const BottomNavigationBarItem(icon: Icon(Icons.alarm), label: 'WhatsApp'),
     ];
 
     assert(tabs.length == navbarItems.length);
@@ -150,7 +164,19 @@ class _MyHomePageState extends State<MyHomePage> {
               onWebViewCreated: (InAppWebViewController controller) async {
                 popupController = controller;
               },
+              // This function handles intent urls using url_launcher
+              onLoadStart: (InAppWebViewController controller, Uri? url) async {
+                // If it is an intent url
+                if (!url.toString().startsWith(RegExp(r'^(https?|about)'))) {
+                  try {
+                    // Launch using url launcher
+                    launch(url.toString());
+                  } catch (_) {}
 
+                  // and close the dialog
+                  Navigator.of(context).pop();
+                }
+              },
               onLoadStop: (InAppWebViewController controller, Uri? url) async {
                 // Setup window.opener.postMessage()
                 controller.evaluateJavascript(
